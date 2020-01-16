@@ -1,15 +1,3 @@
-let text_field = document.createElement("div")
-text_field.style.border = "1px solid #000"
-
-text_field.style.width = "500px"
-text_field.style.height = "500px"
-
-
-
-
-
-document.body.appendChild(text_field)
-
 function TextField (Field)
 {
     let style = document.createElement('style')
@@ -29,6 +17,8 @@ function TextField (Field)
     this.isKeyDown = false
     
     this.selection = window.getSelection()
+    this.endOffset
+    this.startOffset
 
     this.space_char = String.fromCharCode(160)
     this.tab_chars = this.space_char.repeat(4)
@@ -58,7 +48,7 @@ function TextField (Field)
         if (this.showCursor) Field.innerHTML = this.beforeText + this.cursor + this.afterText
         else Field.innerHTML = this.beforeText + this.emptyCursor + this.afterText
     }
-    this.cursorInterval = setInterval(this.cursorIntervalFunc, 500)
+    this.cursorInterval// = setInterval(this.cursorIntervalFunc, 500)
     window.onkeydown = (e) => {        
         let char = e.key
         let charCode = char.length === 1 ? char.charCodeAt(0) : 0
@@ -72,10 +62,31 @@ function TextField (Field)
         console.log(char, charCode, code)
         switch (char) {
             case "Backspace":
-                this.beforeText = this.beforeText.substr(0, this.beforeText.length - 1) 
-                this.text = this.beforeText + this.afterText
+                if (!this.selection.rangeCount || (this.startOffset === this.endOffset))
+                {
+                    this.beforeText = this.beforeText.substr(0, this.beforeText.length - 1) 
+                    this.text = this.beforeText + this.afterText
+        
+                    this.cursorPos -= 1
+                }
+                else
+                {
+                    this.text = this.text.substring(0, this.startOffset) + this.text.substring(this.endOffset, this.text.length)
+                    
+                    if (this.cursorPos > this.startOffset)
+                    {
+                        let length = this.endOffset - this.startOffset
+                        
+                        this.cursorPos -= length
+                    }
 
-                this.cursorPos -= 1
+                    this.beforeText = this.text.substr(0, this.cursorPos)
+                    this.afterText = this.text.substr(this.cursorPos, this.text.length - this.cursorPos)
+
+                    this.startOffset = this.endOffset
+                }
+                
+                Field.innerHTML = this.beforeText + this.cursor + this.afterText
             break
 
             case "Delete":
@@ -147,14 +158,21 @@ function TextField (Field)
 
     Field.onmouseup = e => {
         let range = this.selection.getRangeAt(0)
-        this.cursorPos = range.startOffset
-
+        
         this.beforeText = this.text.substr(0, this.cursorPos)
         this.afterText = this.text.substr(this.cursorPos, this.text.length - this.cursorPos)
+        
+        this.endOffset = range.endOffset
+        this.startOffset = range.startOffset
+        
+        this.cursorPos = this.startOffset
+        // let rng = this.selection.getRangeAt(0)
+        // this.selection.removeAllRanges()
+        
+        // Field.innerHTML = this.beforeText + this.cursor + this.afterText
+        // this.selection.addRange(rng)
 
         console.log(this.cursorPos, this.text.substr(this.cursorPos, 1))
     }
         
 }
-
-const Field = new TextField(text_field)
